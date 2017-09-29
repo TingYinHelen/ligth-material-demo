@@ -44,7 +44,7 @@
 /* 0 */
 /***/ (function(module, exports) {
 
-	let scene, camera, renderer, geometry1, geometry2, loader, texture, mesh1, mesh2;
+	let scene, camera, renderer, geometry1, geometry2, loader, texture, mesh1, mesh2, rectLightHelper;
 	let theta = 0;
 	init();
 	update();
@@ -57,7 +57,19 @@
 		initMesh();
 		initLight();
 
+		addArrowHelper();
+
 		renderer.render(scene, camera);
+	}
+
+	function addArrowHelper() {
+		const dir = new THREE.Vector3(0, 2, 0);
+		dir.normalize();
+		const origin = new THREE.Vector3(0, 0, 0);
+		const length = 10;
+		const hex = 0xffff00;
+		const arrowHelper = new THREE.ArrowHelper(dir, origin, length, hex);
+		scene.add(arrowHelper);
 	}
 
 	function initCamera() {
@@ -73,50 +85,69 @@
 		geometry1 = new THREE.SphereGeometry(5, 32, 32);
 		geometry2 = new THREE.SphereGeometry(5, 32, 32);
 		//Lambert材质
+		const matStdParams = {
+			roughness: 0.044676705160855, // calculated from shininess = 1000
+			metalness: 0.0
+		};
+		const matStdFloor = new THREE.MeshStandardMaterial(matStdParams);
 		const material1 = new THREE.MeshLambertMaterial({ color: 0xffffff });
 		//Phong材质
 		const material2 = new THREE.MeshPhongMaterial({
 			color: 0xffff00,
 			shininess: 100
 		});
-		mesh1 = new THREE.Mesh(geometry1, material1);
+		mesh1 = new THREE.Mesh(geometry1, matStdFloor);
 		mesh1.position.set(-10, 0, 0);
 		scene.add(mesh1);
-		mesh2 = new THREE.Mesh(geometry2, material2);
+		mesh2 = new THREE.Mesh(geometry2, matStdFloor);
 		mesh2.position.set(10, 0, 0);
 		scene.add(mesh2);
 	}
 	function initLight() {
-		//平行光
-		light = new THREE.DirectionalLight(0xff8000);
-		light.position.set(10, 0, 0);
+		// const Amblight = new THREE.AmbientLight(0xff8000)
+		// scene.add(Amblight)
+		// const directionLight = new THREE.DirectionalLight(0xff8000)
+		// directionLight.position.set(-1, 0, 0)
+		// scene.add(directionLight)
+		light = new THREE.RectAreaLight(0xffffff, 3000, 50, 50);
+		light.lookAt(new THREE.Vector3(0, 0, 0));
+		const targetObject = new THREE.Object3D();
+		scene.add(targetObject);
+		light.target = targetObject;
+		light.position.set(20, 20, 0);
+		rectLightHelper = new THREE.RectAreaLightHelper(light);
 		scene.add(light);
+		scene.add(rectLightHelper);
+		console.log(light.isRectAreaLight);
 	}
 
-	const point = document.getElementById('point');
-	const direction = document.getElementById('direction');
-	const ambient = document.getElementById('ambient');
-	point.addEventListener('click', () => {
-		scene.remove(light);
-		light = new THREE.PointLight(0xff8000, 1);
-		scene.add(light);
-	});
-	direction.addEventListener('click', () => {
-		scene.remove(light);
-		light = new THREE.DirectionalLight(0xff8000);
-		scene.add(light);
-	});
-	ambient.addEventListener('click', () => {
-		scene.remove(light);
-		light = new THREE.AmbientLight(0xff8000);
-		scene.add(light);
-	});
+	// const point = document.getElementById('point')
+	// const direction = document.getElementById('direction')
+	// const ambient = document.getElementById('ambient')
+	// point.addEventListener('click', ()=>{
+	// 	scene.remove(light)
+	// 	light = new THREE.PointLight(0xff8000, 1)
+	// 	scene.add(light)
+	// })
+	// direction.addEventListener('click', ()=>{
+	// 	scene.remove(light)
+	// 	light = new THREE.DirectionalLight(0xff8000)
+	// 	scene.add(light)
+	// })
+	// ambient.addEventListener('click', ()=>{
+	// 	scene.remove(light)
+	// 	light = new THREE.AmbientLight(0xff8000)
+	// 	scene.add(light)
+	// })
 
 	function update() {
 		theta += 0.02;
-		light.position.x = -10 * Math.cos(theta);
-		light.position.y = 10 * Math.sin(theta);
+		light.position.x = -20 * Math.cos(theta);
+		light.position.y = 20 * Math.sin(theta);
 		light.position.z = 0;
+		light.lookAt(new THREE.Vector3(0, 0, 0));
+		camera.lookAt(new THREE.Vector3(0, 0, 0));
+		rectLightHelper.update();
 		renderer.render(scene, camera);
 		requestAnimationFrame(update);
 	}
